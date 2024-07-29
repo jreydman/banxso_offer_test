@@ -1,0 +1,29 @@
+# vim: ft=nginx
+
+upstream ${ODBC_HOST_SERVICE} {
+    server ${ODBC_HOST_SERVICE}:${ODBC_HTTP_PORT};
+}
+
+# server {
+#    listen 80;
+#    listen [::]:80;
+#    server_name ${ODBC_DOMAIN};
+#    rewrite ^/(.*)$ https://$host$request_uri? permanent; 
+# }
+
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${ODBC_DOMAIN};
+
+    location / {
+        proxy_pass  http://${ODBC_HOST_SERVICE};
+        proxy_intercept_errors on;
+        error_page 404 = @fallback;
+    }
+
+    location @fallback {
+        return 200 'The requested resource ${ODBC_HOST_SERVICE} is not available.';
+    }
+}

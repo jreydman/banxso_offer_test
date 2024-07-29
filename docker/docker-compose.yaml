@@ -1,0 +1,74 @@
+# profiles:
+#   [dev prod]
+
+services:
+  frontend:
+    build:
+      context: ../services/frontend
+      dockerfile: ../../docker/frontend.Dockerfile
+    container_name: ${FRONTEND_HOST_SERVICE}
+    expose: ['${FRONTEND_HTTP_PORT}']
+    env_file: ../.env
+    volumes:
+      - '../services/frontend:/services/frontend'
+      - 'node_modules:/services/frontend/node_modules'
+
+  backend:
+    build:
+      context: ../services/backend
+      dockerfile: ../../docker/backend.Dockerfile
+    container_name: ${BACKEND_HOST_SERVICE}
+    env_file: ../.env
+    expose: ['${BACKEND_HTTP_PORT}', '${BACKEND_SOCKET_PORT}']
+    volumes:
+      - '../services/backend:/services/backend'
+      - 'node_modules:/services/backend/node_modules'
+
+  database:
+    image: postgres:latest
+    container_name: ${DATABASE_HOST_SERVICE}
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    expose: ['${DATABASE_PORT}']
+    volumes: ['../database/data:/var/lib/postgresql/data']
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ${ODBC_HOST_SERVICE}
+    expose: ['${ODBC_HTTP_PORT}']
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${ODBC_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${ODBC_DEFAULT_PASSWORD}
+      - PGADMIN_LISTEN_PORT=${ODBC_HTTP_PORT}
+    volumes: ['../database/odbc:/var/lib/pgadmin']
+
+  maildev:
+    build:
+      dockerfile: ./maildev.Dockerfile
+    ports: ['${MAILDEV_CLIENT_HTTP_PORT}:${MAILDEV_CLIENT_HTTP_PORT}']
+    expose: ['${MAILDEV_SERVER_PORT}']
+
+  cert-manager:
+    container_name: ${CERT_MANAGER_HOST_SERVICE}
+    image: jacoelho/generate-certificate
+    volumes: ['../gateway/config/certs/${PROJECT_DOMAIN}:/certificates']
+    environment:
+      - SERVER=${PROJECT_DOMAIN}
+
+  gateway:
+    build:
+      context: ../gateway
+      dockerfile: ../docker/gateway.Dockerfile
+    container_name: ${GATEWAY_HOST_SERVICE}
+    depends_on: [database, pgadmin, cert-manager]
+    env_file: ../.env
+    ports: ['80:80', '443:443', '${DATABASE_PORT}:${DATABASE_PORT}']
+    volumes:
+      - '../gateway/config:/etc/nginx'
+      - '../gateway/config/certs:/etc/nginx/certs'
+      - '../gateway/entrypoint-nginx.sh:/entrypoint-nginx.sh'
+
+volumes:
+  node_modules:

@@ -1,0 +1,10 @@
+node_modules
+.next
+.env
+database/data
+database/odbc
+dist
+pnpm-lock.yaml
+.turbo
+certs/*
+!certs/README.md

@@ -1,0 +1,28 @@
+# vim: ft=nginx
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${BACKEND_DOMAIN};
+    rewrite ^/(.*)$ https://$host$request_uri? permanent;
+}
+
+upstream ${BACKEND_HOST_SERVICE} {
+    server ${BACKEND_HOST_SERVICE}:${BACKEND_HTTP_PORT};
+}
+
+
+server {
+    listen 443;
+    listen [::]:443;
+    server_name ${BACKEND_DOMAIN};
+
+    location / {
+        proxy_pass http://${BACKEND_HOST_SERVICE} proxy_intercept_errors on;
+        error_page 404 = @fallback;
+    }
+
+    location @fallback {
+        return 200 'The requested resource ${BACKEND_HOST_SERVICE} is not available.';
+    }
+}
