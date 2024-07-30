@@ -26,9 +26,10 @@ export class FileBucketController {
   @UseGuards(AuthGuard(AuthStrategyEnum.jwtAuth))
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
+    // FIX MAKE PROVIDE INTO REMOTE BUCKET
     const user = await this.supabaseProvider.client.auth.signInWithPassword({
-      email: 'pikj.reyderman@gmail.com',
-      password: '1910310179Sasha',
+      email: '-----test',
+      password: '-------test',
     });
     const uid = user.data.user.id;
     console.log(uid);
